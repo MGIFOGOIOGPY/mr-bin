@@ -461,6 +461,208 @@ def generate_bin_dorks(bank_name=None, country=None, card_type=None):
     
     return base_dorks
 
+# BIN Generation Methods
+def activation_method(card_number):
+    """Method 1: Activation Extraction - Replace last 6 digits with X"""
+    if len(card_number) >= 16:
+        return card_number[:10] + 'x' * 6
+    return None
+
+def similarity_method(card1, card2):
+    """Method 2: Similarity Extraction - Compare two cards and mark differences with X"""
+    if len(card1) != len(card2) or len(card1) < 16:
+        return None
+    
+    bin_part = card1[:6]
+    remaining1 = card1[6:]
+    remaining2 = card2[6:]
+    
+    result = bin_part
+    for i in range(len(remaining1)):
+        if remaining1[i] == remaining2[i]:
+            result += remaining1[i]
+        else:
+            result += 'x'
+    
+    return result
+
+def pattern_method(cards):
+    """Method 3: Pattern Extraction - Find repeating patterns in multiple cards"""
+    if len(cards) < 2:
+        return None
+    
+    bin_part = cards[0][:6]
+    patterns = []
+    
+    for i in range(6, 16):
+        digits = [card[i] for card in cards if len(card) > i]
+        if len(set(digits)) == 1:  # All same digit
+            patterns.append(digits[0])
+        else:
+            patterns.append('x')
+    
+    return bin_part + ''.join(patterns)
+
+def sofia_method(card1, card2):
+    """Method 4: Sofia Method - Mathematical processing of middle digits"""
+    if len(card1) != len(card2) or len(card1) < 16:
+        return None
+    
+    # Take digits from middle of third group (positions 8-9)
+    try:
+        mid1_1 = int(card1[8])
+        mid1_2 = int(card1[9])
+        mid2_1 = int(card2[8])
+        mid2_2 = int(card2[9])
+        
+        # Sum and process
+        sum1 = mid1_1 + mid2_1
+        sum2 = mid1_2 + mid2_2
+        
+        result1 = int((sum1 / 2) * 5)
+        result2 = int((sum2 / 2) * 5)
+        
+        final = result1 + result2
+        
+        return card1[:10] + str(final).zfill(2) + 'x' * 4
+    except:
+        return None
+
+def logical_indentation_method(card):
+    """Method 5: Logical Indentation - Group processing with pattern recognition"""
+    if len(card) < 16:
+        return None
+    
+    working_part = '0' + card[6:]  # Add leading zero
+    groups = []
+    
+    # Split into groups of 3-4-3
+    if len(working_part) >= 10:
+        groups = [working_part[:3], working_part[3:7], working_part[7:10]]
+    else:
+        return None
+    
+    result = card[:6]
+    for group in groups:
+        if len(group) == 3:
+            result += group[0] + 'x' + group[2]
+        elif len(group) == 4:
+            result += group[0] + 'xx' + group[3]
+        else:
+            result += group
+    
+    return result
+
+def material_dinverter_method(card1, card2):
+    """Method 6: Material DInVerter - Complex multiplication and processing"""
+    if len(card1) != len(card2) or len(card1) < 16:
+        return None
+    
+    try:
+        # Take parts from position 8-11
+        part1 = card1[8:12]
+        part2 = card2[8:12]
+        
+        multiplied = ''
+        for i in range(min(len(part1), len(part2))):
+            product = int(part1[i]) * int(part2[i])
+            multiplied += str(product)
+        
+        # Take first 8 digits
+        if len(multiplied) > 8:
+            multiplied = multiplied[:8]
+        elif len(multiplied) < 8:
+            multiplied = multiplied.ljust(8, '0')
+        
+        result = card1[:8] + multiplied + card1[16:]
+        return result
+    except:
+        return None
+
+def generate_bin_from_methods(cards_data, method="all"):
+    """Generate BIN patterns using all methods and validate them"""
+    valid_patterns = []
+    
+    if method == "all" or method == "activation":
+        # Method 1: Activation
+        if len(cards_data) >= 1:
+            pattern1 = activation_method(cards_data[0])
+            if pattern1:
+                bin_info = check_bin_info(pattern1)
+                if bin_info['valid']:
+                    valid_patterns.append({
+                        'method': 'Activation Method',
+                        'pattern': pattern1,
+                        'info': bin_info
+                    })
+    
+    if method == "all" or method == "similarity":
+        # Method 2: Similarity
+        if len(cards_data) >= 2:
+            pattern2 = similarity_method(cards_data[0], cards_data[1])
+            if pattern2:
+                bin_info = check_bin_info(pattern2)
+                if bin_info['valid']:
+                    valid_patterns.append({
+                        'method': 'Similarity Method', 
+                        'pattern': pattern2,
+                        'info': bin_info
+                    })
+    
+    if method == "all" or method == "pattern":
+        # Method 3: Pattern
+        if len(cards_data) >= 2:
+            pattern3 = pattern_method(cards_data[:3])
+            if pattern3:
+                bin_info = check_bin_info(pattern3)
+                if bin_info['valid']:
+                    valid_patterns.append({
+                        'method': 'Pattern Method',
+                        'pattern': pattern3,
+                        'info': bin_info
+                    })
+    
+    if method == "all" or method == "sofia":
+        # Method 4: Sofia
+        if len(cards_data) >= 2:
+            pattern4 = sofia_method(cards_data[0], cards_data[1])
+            if pattern4:
+                bin_info = check_bin_info(pattern4)
+                if bin_info['valid']:
+                    valid_patterns.append({
+                        'method': 'Sofia Method',
+                        'pattern': pattern4,
+                        'info': bin_info
+                    })
+    
+    if method == "all" or method == "logical":
+        # Method 5: Logical Indentation
+        if len(cards_data) >= 1:
+            pattern5 = logical_indentation_method(cards_data[0])
+            if pattern5:
+                bin_info = check_bin_info(pattern5)
+                if bin_info['valid']:
+                    valid_patterns.append({
+                        'method': 'Logical Indentation Method',
+                        'pattern': pattern5,
+                        'info': bin_info
+                    })
+    
+    if method == "all" or method == "material":
+        # Method 6: Material DInVerter
+        if len(cards_data) >= 2:
+            pattern6 = material_dinverter_method(cards_data[0], cards_data[1])
+            if pattern6:
+                bin_info = check_bin_info(pattern6)
+                if bin_info['valid']:
+                    valid_patterns.append({
+                        'method': 'Material DInVerter Method',
+                        'pattern': pattern6,
+                        'info': bin_info
+                    })
+    
+    return valid_patterns
+
 def send_telegram_message_sync(bot_token, chat_id, message):
     """Send message to Telegram bot synchronously"""
     try:
@@ -673,6 +875,68 @@ def get_bin_dorks():
         'api_by': '@R_O_P_D'
     })
 
+@app.route('/bin/generate', methods=['POST'])
+def generate_bin_patterns():
+    """Generate BIN patterns from card numbers using multiple methods"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'cards' not in data:
+            return jsonify({
+                'error': 'Card numbers are required in JSON format',
+                'api_by': '@R_O_P_D'
+            }), 400
+        
+        cards = data['cards']
+        method = data.get('method', 'all')
+        
+        if not isinstance(cards, list) or len(cards) == 0:
+            return jsonify({
+                'error': 'At least one card number is required',
+                'api_by': '@R_O_P_D'
+            }), 400
+        
+        # Validate card numbers
+        for card in cards:
+            if not re.match(r'^\d{13,19}$', str(card)):
+                return jsonify({
+                    'error': f'Invalid card number: {card}. Must be 13-19 digits',
+                    'api_by': '@R_O_P_D'
+                }), 400
+        
+        # Check method requirements
+        if method in ['similarity', 'sofia', 'material'] and len(cards) < 2:
+            return jsonify({
+                'error': f'{method} method requires at least 2 card numbers',
+                'api_by': '@R_O_P_D'
+            }), 400
+        
+        if method == 'pattern' and len(cards) < 2:
+            return jsonify({
+                'error': 'Pattern method requires at least 2 card numbers',
+                'api_by': '@R_O_P_D'
+            }), 400
+        
+        # Generate BIN patterns using all methods
+        generated_patterns = generate_bin_from_methods(cards, method)
+        
+        response_data = {
+            'input_cards': len(cards),
+            'generated_patterns': len(generated_patterns),
+            'patterns': generated_patterns,
+            'method_used': method,
+            'api_by': '@R_O_P_D',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Unexpected error: {str(e)}',
+            'api_by': '@R_O_P_D'
+        }), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -681,6 +945,54 @@ def health_check():
         'message': 'Advanced BIN Analysis API is running',
         'api_by': '@R_O_P_D',
         'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/methods', methods=['GET'])
+def list_methods():
+    """List all available BIN generation methods"""
+    methods = [
+        {
+            'name': 'Activation Method',
+            'description': 'Replaces last 6 digits with X',
+            'required_cards': 1,
+            'endpoint': 'activation'
+        },
+        {
+            'name': 'Similarity Method', 
+            'description': 'Compares two cards and marks differences with X',
+            'required_cards': 2,
+            'endpoint': 'similarity'
+        },
+        {
+            'name': 'Pattern Method',
+            'description': 'Finds repeating patterns in multiple cards',
+            'required_cards': 2,
+            'endpoint': 'pattern'
+        },
+        {
+            'name': 'Sofia Method',
+            'description': 'Mathematical processing of middle digits',
+            'required_cards': 2,
+            'endpoint': 'sofia'
+        },
+        {
+            'name': 'Logical Indentation Method',
+            'description': 'Groups digits and processes logically',
+            'required_cards': 1,
+            'endpoint': 'logical'
+        },
+        {
+            'name': 'Material DInVerter Method',
+            'description': 'Complex multiplication and processing',
+            'required_cards': 2,
+            'endpoint': 'material'
+        }
+    ]
+    
+    return jsonify({
+        'methods': methods,
+        'total_methods': len(methods),
+        'api_by': '@R_O_P_D'
     })
 
 if __name__ == '__main__':
